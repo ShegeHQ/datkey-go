@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"github.com/ShegeHQ/datkey"
+	"io"
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 		return
 	}
 
-	body, err := ioutil.ReadAll(generateKeyResponse.Body)
+	body, err := io.ReadAll(generateKeyResponse.Body)
 
 	if err != nil {
 		fmt.Println("Error reading body:", err)

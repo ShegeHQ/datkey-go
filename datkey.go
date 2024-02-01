@@ -2,15 +2,22 @@ package datkey
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net"
 	"net/http"
+	"time"
 )
+
+const requestTimeout = 60 * time.Second
 
 var baseUrl = "https://api.datkey.dev"
 
 type Config struct {
-	apiKey string
+	apiKey     string
+	httpClient *http.Client
 }
 
 type GenerateKeyPayload struct {
@@ -34,25 +41,35 @@ type VerifyKeyPayload struct {
 }
 
 func Init(apiKey string) Config {
-	return Config{apiKey: apiKey}
+	return Config{
+		apiKey:     apiKey,
+		httpClient: &http.Client{},
+	}
 }
 
 func (c Config) GenerateKey(payload GenerateKeyPayload) (*http.Response, error) {
-	body, err := json.Marshal(&payload)
-	if err != nil {
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(&payload); err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/keys", baseUrl), bytes.NewBuffer(body))
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/keys", baseUrl), &body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", c.apiKey)
 
-	client := http.Client{}
-	generateKey, err := client.Do(req)
+	generateKey, err := c.httpClient.Do(req)
 	if err != nil {
+		if nErr, ok := err.(net.Error); ok && nErr.Timeout() {
+			log.Printf("Request to %s timed out", req.URL)
+		} else {
+			log.Printf("Request to %s failed: %v", req.URL, err)
+		}
 		return nil, err
 	}
 
@@ -60,15 +77,22 @@ func (c Config) GenerateKey(payload GenerateKeyPayload) (*http.Response, error) 
 }
 
 func (c Config) GetKey(keyId string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/keys/%s", baseUrl, keyId), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/keys/%s", baseUrl, keyId), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("x-api-key", c.apiKey)
 
-	client := http.Client{}
-	getKey, err := client.Do(req)
+	getKey, err := c.httpClient.Do(req)
 	if err != nil {
+		if nErr, ok := err.(net.Error); ok && nErr.Timeout() {
+			log.Printf("Request to %s timed out", req.URL)
+		} else {
+			log.Printf("Request to %s failed: %v", req.URL, err)
+		}
 		return nil, err
 	}
 
@@ -76,15 +100,22 @@ func (c Config) GetKey(keyId string) (*http.Response, error) {
 }
 
 func (c Config) RevokeKey(keyId string) (*http.Response, error) {
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/keys/%s", baseUrl, keyId), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/keys/%s", baseUrl, keyId), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("x-api-key", c.apiKey)
 
-	client := http.Client{}
-	deleteKey, err := client.Do(req)
+	deleteKey, err := c.httpClient.Do(req)
 	if err != nil {
+		if nErr, ok := err.(net.Error); ok && nErr.Timeout() {
+			log.Printf("Request to %s timed out", req.URL)
+		} else {
+			log.Printf("Request to %s failed: %v", req.URL, err)
+		}
 		return nil, err
 	}
 
@@ -92,21 +123,28 @@ func (c Config) RevokeKey(keyId string) (*http.Response, error) {
 }
 
 func (c Config) VerifyKey(payload VerifyKeyPayload) (*http.Response, error) {
-	body, err := json.Marshal(&payload)
-	if err != nil {
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(&payload); err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/keys/verify", baseUrl), bytes.NewBuffer(body))
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/keys/verify", baseUrl), &body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", c.apiKey)
 
-	client := http.Client{}
-	verifyKey, err := client.Do(req)
+	verifyKey, err := c.httpClient.Do(req)
 	if err != nil {
+		if nErr, ok := err.(net.Error); ok && nErr.Timeout() {
+			log.Printf("Request to %s timed out", req.URL)
+		} else {
+			log.Printf("Request to %s failed: %v", req.URL, err)
+		}
 		return nil, err
 	}
 
@@ -114,21 +152,28 @@ func (c Config) VerifyKey(payload VerifyKeyPayload) (*http.Response, error) {
 }
 
 func (c Config) UpdateKey(payload UpdateKeyPayload) (*http.Response, error) {
-	body, err := json.Marshal(&payload)
-	if err != nil {
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(&payload); err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/keys", baseUrl), bytes.NewBuffer(body))
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", fmt.Sprintf("%s/keys", baseUrl), &body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", c.apiKey)
 
-	client := http.Client{}
-	updateKey, err := client.Do(req)
+	updateKey, err := c.httpClient.Do(req)
 	if err != nil {
+		if nErr, ok := err.(net.Error); ok && nErr.Timeout() {
+			log.Printf("Request to %s timed out", req.URL)
+		} else {
+			log.Printf("Request to %s failed: %v", req.URL, err)
+		}
 		return nil, err
 	}
 
