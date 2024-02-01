@@ -39,6 +39,8 @@ func main() {
 		return
 	}
 
+	defer generateKeyResponse.Body.Close()
+
 	body, err := io.ReadAll(generateKeyResponse.Body)
 
 	if err != nil {
